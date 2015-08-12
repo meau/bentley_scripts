@@ -10,24 +10,32 @@ import csv
 # grab the URI for the newly created digital object, add the link as an instance to the archival object JSON,
 # and repost the archival object to ASpace using the update archival object endpoint
 
+# Version edited by Arcadia Falcone for use at Yale
 
 aspace_url = 'http://localhost:8089'
-username= 'admin'
+username = 'admin'
 password = 'admin'
+repo_num = '12'
+
+archival_objects_csv = 'infile.txt'
+archival_objects_updated = 'outfile.txt'
 
 auth = requests.post(aspace_url+'/users/'+username+'/login?password='+password).json()
 session = auth["session"]
 headers = {'X-ArchivesSpace-Session':session}
 
+### Handling NULL identifier and missing ref_id ###
+
 with open(archival_objects_csv,'rb') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
-
-        identifier = row[3]
+        # Get digital object ID
+        ### (This is digcoll (Hydra) ID used in handle, not complete handle [5] or Ladybird OID [3]) ###
+        identifier = row[4]
         # Get the archival object's ASpace ref_id
         ref_id = row[2]
         # Search ASpace for the matching ref_id
-        search = requests.get(aspace_url+'/repositories/2/search?page=1&q='+ref_id,headers=headers).json()
+        search = requests.get(aspace_url+'/repositories/'+repo_num+'/search?page=1&q='+ref_id,headers=headers).json()
         
         archival_object_uri = search['results'][0]['uri']
         # Store the JSON for the archival object
@@ -42,7 +50,7 @@ with open(archival_objects_csv,'rb') as csvfile:
 
             dig_obj_data = json.dumps(dig_obj)
             # Post the digital object
-            dig_obj_post = requests.post(aspace_url+'/repositories/2/digital_objects',headers=headers,data=dig_obj_data).json()
+            dig_obj_post = requests.post(aspace_url+'/repositories/'+repo_num+'/digital_objects',headers=headers,data=dig_obj_data).json()
 
             print 'Digital Object Status', dig_obj_post['status']
             # Grab the digital object uri
