@@ -24,21 +24,20 @@ auth = requests.post(aspace_url+'/users/'+username+'/login?password='+password).
 session = auth["session"]
 headers = {'X-ArchivesSpace-Session':session}
 
-### Handling NULL identifier and missing ref_id ###
-
 with open(archival_objects_csv,'rb') as csvfile:
     reader = csv.reader(csvfile)
     for row in reader:
-        # Get digital object ID
-        ### (This is digcoll (Hydra) ID used in handle, not complete handle [5] or Ladybird OID [3]) ###
-        identifier = row[4]
-        # Get the archival object's ASpace ref_id
-        ref_id = row[2]
+        # Get digital object ID (Fedora digcoll identifier) from csv
+        identifier = row[3]
+        # Get digital object file URI from csv
+        file_uri = row[4]
+        # Get the archival object's ASpace ref_id csv
+        ref_id = row[1]
         # Search ASpace for the matching ref_id
         search = requests.get(aspace_url+'/repositories/'+repo_num+'/search?page=1&q='+ref_id,headers=headers).json()
-        
+        # Grab the archival object uri from the search results
         archival_object_uri = search['results'][0]['uri']
-        # Store the JSON for the archival object
+        # Submit a GET request for the archival object and store the JSON
         archival_object_json = requests.get(aspace_url+archival_object_uri,headers=headers).json()
 
         # Continue only if the search-returned archival object's ref_id matches our starting ref_id
@@ -46,8 +45,7 @@ with open(archival_objects_csv,'rb') as csvfile:
             row.append(archival_object_uri)
             display_string = archival_object_json['display_string']
             # Form the digital object JSON
-            dig_obj = {'title':display_string,'digital_object_id':identifier}
-
+            dig_obj = {'title':display_string,'digital_object_id':identifier,'file_versions':[{'file_uri':file_uri}]}
             dig_obj_data = json.dumps(dig_obj)
             # Post the digital object
             dig_obj_post = requests.post(aspace_url+'/repositories/'+repo_num+'/digital_objects',headers=headers,data=dig_obj_data).json()
