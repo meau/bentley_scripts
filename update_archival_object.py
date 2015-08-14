@@ -37,15 +37,17 @@ with open(archival_objects_csv,'rb') as csvfile:
         resource_uri = row[0]
         # Search ASpace for the matching ref_id
         search = requests.get(aspace_url+'/repositories/'+repo_num+'/search?page=1&q='+ref_id,headers=headers).json()
+        archival_object_uri = None
         for result in search['results']:
-        	if 'resource' in result:
-        		if result['resource'].endswith(resource_uri):
-	        	    archival_object_uri = result['uri']
-        # Submit a GET request for the archival object and store the JSON
-        archival_object_json = requests.get(aspace_url+archival_object_uri,headers=headers).json()
+        	if 'resource' in result and result['resource'].endswith(resource_uri):
+	       		archival_object_uri = result['uri']
+        		archival_object_json = requests.get(aspace_url+archival_object_uri,headers=headers).json()
+        		break
+        	else:
+        		archival_object_json = None
 
         # Continue only if the search-returned archival object's ref_id matches our starting ref_id
-        if archival_object_json['ref_id'] == ref_id:
+        if archival_object_json and archival_object_json['ref_id'] == ref_id:
             row.append(archival_object_uri)
             display_string = archival_object_json['display_string']
             # Form the digital object JSON
