@@ -33,10 +33,13 @@ with open(archival_objects_csv,'rb') as csvfile:
         file_uri = row[4]
         # Get the archival object's ASpace ref_id csv
         ref_id = row[1]
+        # Get the archival object's ASpace resource ID
+        resource_uri = row[0]
         # Search ASpace for the matching ref_id
         search = requests.get(aspace_url+'/repositories/'+repo_num+'/search?page=1&q='+ref_id,headers=headers).json()
-        # Grab the archival object uri from the search results
-        archival_object_uri = search['results'][0]['uri']
+        for result in search['results']:
+	        if resource_uri in result['resource']['ref']:
+                archival_object_uri = result['uri']
         # Submit a GET request for the archival object and store the JSON
         archival_object_json = requests.get(aspace_url+archival_object_uri,headers=headers).json()
 
