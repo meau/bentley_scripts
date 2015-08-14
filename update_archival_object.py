@@ -38,13 +38,12 @@ with open(archival_objects_csv,'rb') as csvfile:
         # Search ASpace for the matching ref_id
         search = requests.get(aspace_url+'/repositories/'+repo_num+'/search?page=1&q='+ref_id,headers=headers).json()
         archival_object_uri = None
+        archival_object_json = None
         for result in search['results']:
         	if 'resource' in result and result['resource'].endswith(resource_uri):
 	       		archival_object_uri = result['uri']
         		archival_object_json = requests.get(aspace_url+archival_object_uri,headers=headers).json()
         		break
-        	else:
-        		archival_object_json = None
 
         # Continue only if the search-returned archival object's ref_id matches our starting ref_id
         if archival_object_json and archival_object_json['ref_id'] == ref_id:
