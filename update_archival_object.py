@@ -10,11 +10,11 @@ import csv
 # grab the URI for the newly created digital object, add the link as an instance to the archival object JSON,
 # and repost the archival object to ASpace using the update archival object endpoint
 
-# Version edited by Arcadia Falcone for use at Yale
+# Version edited by Maureen Callahan and Arcadia Falcone for use at Yale
 
 aspace_url = 'http://localhost:8089'
 username = 'admin'
-password = 'admin'
+password = 'banana'
 repo_num = '12'
 
 archival_objects_csv = 'infile.txt'
@@ -31,48 +31,32 @@ with open(archival_objects_csv,'rb') as csvfile:
         identifier = row[3]
         # Get digital object file URI from csv
         file_uri = row[4]
-        # Get the archival object's ASpace ref_id csv
-        ref_id = row[1]
-        # Get the archival object's ASpace resource ID
-        resource_uri = row[0]
-        # Search ASpace for the matching ref_id
-        search = requests.get(aspace_url+'/repositories/'+repo_num+'/search?page=1&q='+ref_id,headers=headers).json()
-        archival_object_uri = None
-        archival_object_json = None
-        for result in search['results']:
-        	if 'resource' in result and result['resource'].endswith(resource_uri):
-	       		archival_object_uri = result['uri']
-        		archival_object_json = requests.get(aspace_url+archival_object_uri,headers=headers).json()
-        		break
-
-        # Continue only if the search-returned archival object's ref_id matches our starting ref_id
-        if archival_object_json and archival_object_json['ref_id'] == ref_id:
-            row.append(archival_object_uri)
-            display_string = archival_object_json['display_string']
-            # Form the digital object JSON
-            dig_obj = {'title':display_string,'digital_object_id':identifier,'file_versions':[{'file_uri':file_uri}]}
-            dig_obj_data = json.dumps(dig_obj)
-            # Post the digital object
-            dig_obj_post = requests.post(aspace_url+'/repositories/'+repo_num+'/digital_objects',headers=headers,data=dig_obj_data).json()
-
-            print 'Digital Object Status', dig_obj_post['status']
-            # Grab the digital object uri
-            dig_obj_uri = dig_obj_post['uri']
-
-            print 'Digital Object URI', dig_obj_uri
-
-            row.append(dig_obj_uri)
-            # Build a new instance, linking to the digital object
-            dig_obj_instance = {'instance_type':'digital_object', 'digital_object':{'ref':dig_obj_uri}}
-            # Append the new instance to the existing archival object record
-            archival_object_json['instances'].append(dig_obj_instance)
-
-            archival_object_data = json.dumps(archival_object_json)
-            # Repost the archival object
-            archival_object_update = requests.post(aspace_url+archival_object_uri,headers=headers,data=archival_object_data).json()
-
-            print archival_object_update
-
-            with open(archival_objects_updated,'ab') as csvout:
-                writer = csv.writer(csvout)
-                writer.writerow(row)
+        # Get the archival object's ASpace archival object ID from csv
+        ao_uri = row[1]
+        # Get the archival object's ASpace archival_object ID
+        archival_object_uri = aspace_url+'/repositories/'+repo_num+'/archival_objects/'+ao_uri
+        archival_object_json = requests.get(archival_object_uri,headers=headers).json()
+        row.append(archival_object_uri)
+        display_string = archival_object_json['display_string']
+        publish = archival_object_json['publish']
+        # Form the digital object JSON
+        dig_obj = {'title':display_string, 'publish':publish, 'digital_object_id':identifier,'file_versions':[{'file_uri':file_uri}]}
+        dig_obj_data = json.dumps(dig_obj)
+        # Post the digital object
+        dig_obj_post = requests.post(aspace_url+'/repositories/'+repo_num+'/digital_objects',headers=headers,data=dig_obj_data).json()
+        print 'Digital Object Status', dig_obj_post['status']
+        # Grab the digital object uri
+        dig_obj_uri = dig_obj_post['uri']
+        print 'Digital Object URI', dig_obj_uri
+        row.append(dig_obj_uri)
+        # Build a new instance, linking to the digital object
+        dig_obj_instance = {'instance_type':'digital_object', 'digital_object':{'ref':dig_obj_uri}}
+        # Append the new instance to the existing archival object record
+        archival_object_json['instances'].append(dig_obj_instance)
+        archival_object_data = json.dumps(archival_object_json)
+        # Repost the archival object
+        archival_object_update = requests.post(archival_object_uri,headers=headers,data=archival_object_data).json()
+        print archival_object_update
+        with open(archival_objects_updated,'ab') as csvout:
+            writer = csv.writer(csvout)
+            writer.writerow(row)
