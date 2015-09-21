@@ -40,7 +40,7 @@ with open(archival_objects_csv,'rb') as csvfile:
         display_string = archival_object_json['display_string']
         publish = archival_object_json['publish']
         # Form the digital object JSON
-        dig_obj = {'title':display_string, 'publish':publish, 'digital_object_id':identifier,'file_versions':[{'file_uri':file_uri}]}
+        dig_obj = {'title':display_string, 'publish':publish, 'digital_object_id':identifier,'file_versions':[{'file_uri':file_uri, 'publish':publish}]}
         dig_obj_data = json.dumps(dig_obj)
         # Post the digital object
         dig_obj_post = requests.post(aspace_url+'/repositories/'+repo_num+'/digital_objects',headers=headers,data=dig_obj_data).json()
